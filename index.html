@@ -1,0 +1,218 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shivam Kumar - Data Scientist Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; }
+        .section { scroll-margin-top: 80px; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div id="root"></div>
+    <script type="text/babel">
+        const NavBar = () => (
+            <nav class="bg-blue-900 text-white fixed w-full top-0 z-10 shadow-lg">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <h1 class="text-2xl font-bold">Shivam Kumar</h1>
+                    <div class="space-x-4">
+                        <a href="#home" class="hover:text-blue-300">Home</a>
+                        <a href="#about" class="hover:text-blue-300">About</a>
+                        <a href="#projects" class="hover:text-blue-300">Projects</a>
+                        <a href="#skills" class="hover:text-blue-300">Skills</a>
+                        <a href="#blogs" class="hover:text-blue-300">Blogs</a>
+                        <a href="#contact" class="hover:text-blue-300">Contact</a>
+                    </div>
+                </div>
+            </nav>
+        );
+
+        const HeroSection = () => (
+            <section id="home" class="bg-blue-800 text-white py-20 text-center">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h1 class="text-4xl md:text-5xl font-bold mb-4">Shivam Kumar</h1>
+                    <p class="text-xl md:text-2xl mb-6">Data Scientist & AI/ML Engineer</p>
+                    <p class="text-lg max-w-2xl mx-auto">Specializing in machine learning, causal inference, and time-series analysis to deliver impactful AI solutions.</p>
+                    <a href="#contact" class="mt-6 inline-block bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Get in Touch</a>
+                </div>
+            </section>
+        );
+
+        const AboutSection = () => (
+            <section id="about" class="py-16 section">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 class="text-3xl font-bold mb-6 text-center">About Me</h2>
+                    <div class="flex flex-col md:flex-row items-center">
+                        <div class="md:w-1/2 mb-6 md:mb-0">
+                            <img src="images/shivam.jpg" alt="Shivam Kumar" class="rounded-full mx-auto w-64 h-64 object-cover"/>
+                        </div>
+                        <div class="md:w-1/2">
+                            <p class="text-lg mb-4">I am an accomplished Data Scientist and AI/ML Engineer with a passion for solving complex problems using machine learning, deep learning, and causal inference. Currently pursuing an M.Sc. in Data Science at the Defence Institute of Advanced Technology, Pune, I have hands-on experience in time-series analysis, generative AI, and MLOps.</p>
+                            <p class="text-lg mb-4">With a strong academic foundation and practical experience as a Mathematics and Physics Tutor, as well as a Subject Matter Expert at Chegg Inc., I excel in delivering scalable AI solutions and mentoring others in technical domains.</p>
+                            <p class="text-lg">My expertise includes Python, PyTorch, TensorFlow, AWS, and advanced analytics, with a focus on energy analytics and real-world applications.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const ProjectsSection = () => (
+            <section id="projects" class="py-16 bg-white section">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 class="text-3xl font-bold mb-6 text-center">Key Projects</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="p-6 bg-gray-100 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-2">Temporal Causal Inference for Energy Analytics</h3>
+                            <p class="text-gray-600 mb-4">Developed a Temporal Causal Variational Autoencoder (TCVAE) to estimate appliance-specific causal effects on household energy consumption using the REFIT dataset. Achieved MSE of 0.1593 and R² of 0.9642, outperforming LSTM and VAE baselines.</p>
+                            <p class="text-gray-600"><strong>Technologies:</strong> Python, PyTorch, Pandas, NumPy, Scikit-learn</p>
+                        </div>
+                        <div class="p-6 bg-gray-100 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-2">Automated Blog Generation with Generative AI</h3>
+                            <p class="text-gray-600 mb-4">Built a serverless framework using AWS Lambda and Amazon Bedrock to generate SEO-optimized blogs, increasing user engagement by 40% across 100+ articles.</p>
+                            <p class="text-gray-600"><strong>Technologies:</strong> AWS Lambda, Amazon Bedrock, Hugging Face LLMs, GPT-4</p>
+                        </div>
+                        <div class="p-6 bg-gray-100 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-2">Customer Churn Prediction with Neural Networks</h3>
+                            <p class="text-gray-600 mb-4">Constructed an ANN to predict telecom customer churn, achieving 90% accuracy on a 10,000-record dataset with 5-fold cross-validation.</p>
+                            <p class="text-gray-600"><strong>Technologies:</strong> Keras, TensorFlow, Pandas, Scikit-learn</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const SkillsSection = () => (
+            <section id="skills" class="py-16 section">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 class="text-3xl font-bold mb-6 text-center">Technical Skills</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Programming Languages</h3>
+                            <p class="text-gray-600">Python, SQL, R</p>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Frameworks & Libraries</h3>
+                            <p class="text-gray-600">PyTorch, TensorFlow, Keras, Scikit-learn, Pandas, NumPy, Hugging Face, LangChain, Matplotlib, Seaborn</p>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Cloud & Tools</h3>
+                            <p class="text-gray-600">AWS (Lambda, Bedrock), Docker, Git, NVIDIA GPUs</p>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Domains</h3>
+                            <p class="text-gray-600">Machine Learning, Deep Learning, NLP, Generative AI, Time Series Analysis, Causal Inference, MLOps, EDA</p>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Databases</h3>
+                            <p class="text-gray-600">MySQL, MongoDB</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const BlogsSection = () => (
+            <section id="blogs" class="py-16 bg-white section">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 class="text-3xl font-bold mb-6 text-center">Blogs</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="p-6 bg-gray-100 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-2">Causal Inference in Time-Series Data</h3>
+                            <p class="text-gray-600 mb-4">Exploring how Temporal Causal Variational Autoencoders can uncover appliance-specific effects in energy consumption, with insights from the REFIT dataset.</p>
+                            <a href="causal-inference.html" class="text-blue-600 hover:underline">Read More</a>
+                        </div>
+                        <div class="p-6 bg-gray-100 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-2">Generative AI for Content Creation</h3>
+                            <p class="text-gray-600 mb-4">How serverless architectures and LLMs like GPT-4 can automate SEO-optimized content generation for businesses.</p>
+                            <a href="generative-ai.html" class="text-blue-600 hover:underline">Read More</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const ContactSection = () => (
+            <section id="contact" class="py-16 section">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 class="text-3xl font-bold mb-6 text-center">Contact Me</h2>
+                    <p class="text-lg text-center mb-6">Feel free to reach out for collaborations, opportunities, or inquiries!</p>
+                    <div class="flex justify-center space-x-4">
+                        <a href="mailto:shivamlko9832@gmail.com" class="text-blue-600 hover:underline">Email: shivamlko9832@gmail.com</a>
+                        <a href="tel:+917309636110" class="text-blue-600 hover:underline">Phone: +91-7309636110</a>
+                        <a href="https://linkedin.com/in/shivamkumar" class="text-blue-600 hover:underline">LinkedIn</a>
+                        <a href="https://github.com/shivamkumar" class="text-blue-600 hover:underline">GitHub</a>
+                    </div>
+                </div>
+            </section>
+        );
+
+        const Footer = () => (
+            <footer class="bg-blue-900 text-white py-6">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <p>© 2025 Shivam Kumar. All rights reserved.</p>
+                </div>
+            </footer>
+        );
+
+        const App = () => (
+            <div>
+                <NavBar />
+                <HeroSection />
+                <AboutSection />
+                <ProjectsSection />
+                <SkillsSection />
+                <BlogsSection />
+                <ContactSection />
+                <Footer />
+            </div>
+        );
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
