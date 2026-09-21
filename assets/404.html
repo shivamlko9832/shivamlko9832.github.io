@@ -1,9 +1,17 @@
 ---
 layout: page
-title: "404: Page not found"
+title: "404 — Page not found"
 permalink: /404.html
+toc: false
 ---
 
-That page is not here. It may have moved, or the link may be incomplete.
+<p class="lead-note">
+  That page isn't here. It may have moved, or the link may be incomplete.
+</p>
 
-Return to [Home]({{ '/' | relative_url }}), browse the [Archives]({{ '/archives/' | relative_url }}), or explore the [Tags]({{ '/tags/' | relative_url }}).
+<div class="hero-actions">
+  <a class="hero-btn hero-btn--primary" href="{{ '/' | relative_url }}"><i class="fas fa-house fa-fw"></i> Home</a>
+  <a class="hero-btn" href="{{ '/archives/' | relative_url }}"><i class="fas fa-archive fa-fw"></i> Archive</a>
+  <a class="hero-btn" href="{{ '/tags/' | relative_url }}"><i class="fas fa-tags fa-fw"></i> Tags</a>
+  <a class="hero-btn" href="{{ '/about/' | relative_url }}"><i class="far fa-user fa-fw"></i> About</a>
+</div>

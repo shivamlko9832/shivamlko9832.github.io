@@ -1,0 +1,30 @@
+# Content for the home page hero. Edit freely — the layout renders whatever is here.
+
+eyebrow: "Shivam · Lucknow, India"
+
+title: "Notes on AI systems, cloud infrastructure, and <em>agents</em>."
+
+lede: >-
+  I build and write about production AI systems — agent architecture on Azure AI Foundry
+  and the Microsoft Agent Framework, MCP server integrations, and the infrastructure
+  underneath. Long-form, evidence-first, with vendor claims and independent findings
+  kept clearly apart.
+
+actions:
+  - label: "Read the latest"
+    url: "#post-list"
+    icon: "fas fa-arrow-down"
+    primary: true
+  - label: "About me"
+    url: "/about/"
+    icon: "far fa-user"
+  - label: "LinkedIn"
+    url: "https://www.linkedin.com/in/shivamlko9832/"
+    icon: "fab fa-linkedin"
+
+focus:
+  - "Azure AI Foundry"
+  - "Microsoft Agent Framework"
+  - "MCP servers"
+  - "Agent architecture"
+  - "Evaluation & calibration"

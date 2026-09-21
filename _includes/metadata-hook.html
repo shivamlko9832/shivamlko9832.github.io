@@ -1,0 +1,40 @@
+<!-- Custom metadata: typography, structured data and site enhancements -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..600&display=swap"
+>
+
+<meta name="author" content="{{ site.social.name }}">
+<meta name="color-scheme" content="light dark">
+
+{% if page.layout == 'home' %}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "{{ site.social.name }}",
+      "url": "{{ site.url }}",
+      "email": "mailto:{{ site.social.email }}",
+      "jobTitle": "Cloud & AI Engineer",
+      "description": {{ site.description | strip_newlines | strip | jsonify }},
+      "knowsAbout": [
+        "AI agents",
+        "Microsoft Azure",
+        "Azure AI Foundry",
+        "Microsoft Agent Framework",
+        "Model Context Protocol",
+        "Cloud architecture"
+      ],
+      "sameAs": [
+        {%- for link in site.social.links -%}
+          "{{ link }}"{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      ]
+    }
+  </script>
+{% endif %}
+
+<script defer src="{{ '/assets/js/custom.js' | relative_url }}"></script>
