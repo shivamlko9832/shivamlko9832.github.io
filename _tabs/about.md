@@ -6,7 +6,7 @@ toc: false
 ---
 
 <p class="lead-note">
-  I'm Shivam — a cloud and AI engineer in Lucknow, India. I build agent systems that
+  I'm Shivam — a cloud and AI engineer in Hyderabad, India. I build agent systems that
   have to survive contact with production, and I write down what actually held up.
 </p>
 
