@@ -8,6 +8,9 @@ math: false
 mermaid: true
 toc: true
 pin: true
+image:
+  path: /assets/img/jev-og.png
+  alt: "Jev by TypeSafe AI - decision-only AI models"
 ---
 
 > **What if an AI model didn't write paragraphs, but made reliable typed decisions your code could act on?**
