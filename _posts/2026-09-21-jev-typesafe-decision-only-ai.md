@@ -17,6 +17,9 @@ image:
 
 **Jev is not a chatbot.** It is a fast, structured decision model built to sit inside software: you hand it program state and typed questions, and it hands back typed answers with calibrated probabilities — no prose, no JSON parsing, no schema coercion.
 
+> **How to read this.** Skimming? Read **Executive summary** and **Limitations and risks**. Building? Start with **How to use Jev** and **Architecture in real products**. Evaluating? Go to **What independent testing has found so far**.
+{: .prompt-tip }
+
 ---
 
 ## Executive summary
@@ -46,7 +49,7 @@ TypeSafe borrows the name from Daniel Kahneman's *Thinking, Fast and Slow*: **Sy
 The model itself is named after **William Stanley Jevons**. TypeSafe's stated reasoning: like coal after the steam engine, every order-of-magnitude drop in the cost of intelligence should unlock orders of magnitude more uses of it.
 
 > **A definitional caution.** "System One model" is TypeSafe's own category name, coined with this launch. It is not an established industry taxonomy with independent verification behind it. Treat it as vendor vocabulary that happens to be useful, not as a settled classification.
-{: .prompt-tip }
+{: .prompt-info }
 
 ### Unstructured state in, typed probabilistic decisions out
 
@@ -61,13 +64,30 @@ That fourth step is the design philosophy, not an afterthought. TypeSafe's docum
 
 ### How it differs from a token-generating LLM
 
-| | Autoregressive LLM | Jev |
+| Dimension | Autoregressive LLM | Jev |
 |---|---|---|
 | **Sampling** | Sequential — one token at a time, each conditioned on the last | Parallel — all outputs in a single pass |
 | **Output substrate** | Strings (which *may* be JSON) | Typed values drawn from your declared answer space |
 | **Post-processing** | Parse → validate → coerce → handle failures | None. The answer is already a typed value |
 | **Probabilities** | A generated *estimate*, if you asked for one | Native to every answer, with a full distribution |
 | **Adding a question** | Extends the generation; can shift other answers | Evaluated independently; other answers unchanged |
+
+This comparison shows sequential token sampling beside questions evaluated in parallel and in isolation against the same state.
+
+```mermaid
+flowchart TB
+    subgraph L["Autoregressive LLM"]
+        direction TB
+        LP["Prompt"] --> LT1["Token 1"] --> LT2["Token 2"] --> LT3["Token 3"]
+    end
+    subgraph J["Jev request"]
+        direction TB
+        JS["Same state"] --> JP["Parallel isolated questions"]
+        JP --> JQ1["Question A<br/>→ typed answer A"]
+        JP --> JQ2["Question B<br/>→ typed answer B"]
+    end
+    LT3 ~~~ JS
+```
 
 The independence property is the underrated one. In an LLM call, ten questions in one prompt means ten judgments contaminating each other and competing for attention in a single context. TypeSafe states that Jev evaluates each question in isolation against the same state, so adding questions does not create context rot between them — and because output tokens are free and questions run in parallel, *asking a question you might not need is close to free*.
 
@@ -140,13 +160,23 @@ Numbers below are from TypeSafe's models page and the platform docs, as of **21 
 | Data handling | Not trained on customer requests/responses; ZDR available for enterprise |
 
 > **Availability.** Jev is in **early access** with a waitlist. Architecture details and weights are not public. Treat "how it actually works internally" as **not yet publicly documented**.
-{: .prompt-tip }
+{: .prompt-warning }
 
 ---
 
 ## Core primitives
 
 Three question types. All three can be mixed freely in one request.
+
+This decision tree maps the shape of an answer to the primitive designed for it.
+
+```mermaid
+flowchart TB
+    A{"What shape is the answer?"}
+    A -->|"yes / no proposition"| N["Noul"]
+    A -->|"one named option"| C["Choice"]
+    A -->|"ordered levels"| S["Score"]
+```
 
 | Primitive | What it does | Example | Best use case | Limitation |
 |---|---|---|---|---|
@@ -249,6 +279,18 @@ For each: what goes into the state, what you ask, what comes back, and what your
 - **Questions:** `operation` (Choice: CLICK / TYPE_TEXT / SELECT / SCROLL / WAIT / DONE / BLOCKED) plus **speculative target questions** — one Choice per possible operation, all in the same request.
 - **Output:** an operation and a target for each branch. Only the target matching the chosen operation is used; the rest are discarded.
 - **Action:** execute. Two decisions, **one network round trip**. This is TypeSafe's "speculative fan-out" pattern, and it is where the free-output-tokens pricing genuinely changes the design.
+
+Speculative fan-out asks the operation and possible targets together, then keeps only the target that matches the chosen operation.
+
+```mermaid
+flowchart TB
+    R["One Jev request"] --> O["Operation Choice"]
+    R --> T["Parallel target questions<br/>click / type / select"]
+    O --> A["Application matches target"]
+    T --> A
+    A --> U["Use matching answer"]
+    A --> D["Discard other answers"]
+```
 
 ### 9. Email classification
 
@@ -595,19 +637,25 @@ TypeSafe publishes a "model jaggedness" page for `jev-1.13` — an unusually can
 ### What independent testing has found so far
 
 > **Evidence grade.** Jev launched on 15 September 2026. The independent evidence below was published between 17 and 21 September, mostly by individual researchers with open repositories, on synthetic or small datasets. None of it is peer-reviewed or large-scale. Read it as early signal, not settled fact — and note that the vendor's own headline numbers have not been independently reproduced either.
-{: .prompt-tip }
+{: .prompt-warning }
 
-**Decomposition changes the answer dramatically.** In one third-party benchmark (2,000 emails, half phishing, published 17 September), asking Jev a single "is this phishing?" question scored **62.6%**, against **81.3%** for a fast mid-tier LLM baseline. Split into five narrow questions and combined with a logistic regression fitted on 1,000 labelled examples, Jev reached **95.0%** on the held-out half — against 93.2% for the baseline and 91.8% for a two-line regex. The Jev-vs-baseline gap at that point was not statistically significant.
+**Decomposition changes the answer dramatically.** In one third-party benchmark (2,000 emails, half phishing, published 17 September), asking Jev a single "is this phishing?" question scored **62.6%**, against **81.3%** for a fast mid-tier LLM baseline.
+
+Split into five narrow questions and combined with a logistic regression fitted on 1,000 labelled examples, Jev reached **95.0%** on the held-out half — against 93.2% for the baseline and 91.8% for a two-line regex. The Jev-vs-baseline gap at that point was not statistically significant.
 
 The honest reading of that result: **the 95% is not Jev.** It is Jev *plus your labelled data plus a regression you maintain*. Decomposition isn't a nice-to-have; it's where the accuracy comes from.
 
-**Calibration needs per-question work.** In a separate third-party study on 900 synthetic support tickets (19 September), measured expected calibration error was **0.107**, roughly 4.4× the study's noise floor — and the errors ran in *opposite directions by question type*: yes/no answers underconfident, Choice and Score answers overconfident. Most importantly, on a question whose correct answer depended on an internal policy that never appeared in the ticket text, Jev was right **44.7% of the time while assigning an average probability of 0.74**. It was confidently wrong about something nobody could have known.
+**Calibration needs per-question work.** In a separate third-party study on 900 synthetic support tickets (19 September), measured expected calibration error was **0.107**, roughly 4.4× the study's noise floor — and the errors ran in *opposite directions by question type*: yes/no answers underconfident, Choice and Score answers overconfident.
+
+Most importantly, on a question whose correct answer depended on an internal policy that never appeared in the ticket text, Jev was right **44.7% of the time while assigning an average probability of 0.74**. It was confidently wrong about something nobody could have known.
 
 **Forced binaries produce confident guesses.** The same body of early testing found that a Choice with no `unknown` or `needs_review` option makes the model pick the *least wrong* answer rather than signal that it doesn't know. Give every Choice an explicit escape hatch.
 
 **Bad criteria are worse than no model.** A pre-registered evaluation published 20 September reported strong zero-shot results on its own 400-item benchmark, alongside a finding worth pinning to the wall: **wrong criteria descriptions scored 16.7% — below the 25% random floor.** With Jev, the question text is the program. A wrong description doesn't degrade gracefully; it inverts.
 
-**Agent demos are promising and explicitly bounded.** The `browser-use/jev-ultrafast` repo reports a Zürich→London Google Flights search in about **7.1 seconds**, and across six alternating runs a median task time of 9.450s → 7.092s (~25% reduction) with browser protocol calls falling from 1,092 to 101. The authors state plainly that this is three repeats of one task on one browser profile, **not a general reliability benchmark**. Similarly, `droidrun/mobile-jev` demonstrates a real Android device reaching Uber's payment selection in about 21 seconds across 9 actions — and notes that a completed booking is *not* demonstrated, and that **Jev's `DONE` response is not independent proof of success**.
+**Agent demos are promising and explicitly bounded.** The `browser-use/jev-ultrafast` repo reports a Zürich→London Google Flights search in about **7.1 seconds**, and across six alternating runs a median task time of 9.450s → 7.092s (~25% reduction) with browser protocol calls falling from 1,092 to 101. The authors state plainly that this is three repeats of one task on one browser profile, **not a general reliability benchmark**.
+
+Similarly, `droidrun/mobile-jev` demonstrates a real Android device reaching Uber's payment selection in about 21 seconds across 9 actions — and notes that a completed booking is *not* demonstrated, and that **Jev's `DONE` response is not independent proof of success**.
 
 ### Operational and governance risks
 
@@ -730,6 +778,18 @@ The saving isn't only money. It's that the generative model gets a better-shaped
 
 **Other hybrid shapes worth knowing:**
 
+The guardrail variant screens both inbound and outbound LLM traffic before it reaches the next stage.
+
+```mermaid
+flowchart TB
+    P["Inbound prompt"] --> I{"Jev inbound screen"}
+    I -->|"pass"| L["Generative LLM"]
+    I -->|"review / block"| H1["Stop or review"]
+    L --> O{"Jev outbound screen"}
+    O -->|"pass"| R["Response"]
+    O -->|"review / block"| H2["Stop or review"]
+```
+
 - **Jev as guardrail around an LLM.** Screen inbound prompts for jailbreaks and outbound responses for policy violations. One request, several Nouls and a severity Score, on both sides of the generative call.
 - **Jev as LLM-as-judge replacement.** Rubric checks in eval pipelines are exactly Jev-shaped. (One early comparison found a cheap fast LLM agreed with a frontier judge *slightly more often* than Jev at ~1.6× the price — so benchmark against your cheapest adequate option, not just against a frontier model.)
 - **Jev as retrieval re-ranker.** One Noul per query-candidate pair, then sort by raw probability rather than thresholding.
@@ -787,6 +847,17 @@ That is a reasonable place for a two-week-old model category to be. It is also a
 
 The most interesting sentence in TypeSafe's launch post isn't any of the benchmark numbers. It's the framing: *AI needs an interface software could depend on.* Whether Jev turns out to be that interface is an open question. That the question is finally being asked seriously is the news.
 
+> **Key takeaways**
+>
+> - Jev is designed for typed decisions rather than text generation, so it complements rather than replaces generative LLMs.
+> - TypeSafe's "cannot hallucinate" claim applies to schema compliance, not to whether the selected answer is correct.
+> - Questions in one request are evaluated in parallel and in isolation against the same state.
+> - Noul, Choice, and Score serve propositions, named options, and ordered levels respectively.
+> - Probabilities and confidence still require validation on your own data and thresholds sized to each action.
+> - Low-confidence and high-risk decisions still need a fallback or a person in the loop.
+> - The independent evidence is early, so pin versions, shadow-test, and let your own labelled data decide.
+{: .prompt-info }
+
 ---
 
 ## Sources
@@ -836,4 +907,4 @@ The most interesting sentence in TypeSafe's launch post isn't any of the benchma
 ---
 
 > **Publication note.** Written 21 September 2026, six days after Jev's launch. Every figure attributed to TypeSafe is a vendor claim. Every figure attributed to a third party comes from a small, recent, mostly synthetic experiment. Both categories will age fast. Check the primary sources before you build on anything here.
-{: .prompt-tip }
+{: .prompt-warning }
